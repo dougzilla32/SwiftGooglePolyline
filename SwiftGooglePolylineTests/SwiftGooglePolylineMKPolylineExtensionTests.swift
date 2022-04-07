@@ -42,19 +42,19 @@ class SwiftGooglePolylineMKPolylineExtensionTests: XCTestCase {
     }
     
     func testConstructionFromPolylineString() {
-        XCTAssertNoThrow(validate(try MKPolyline(encodedGooglePolyline: testEncodedGooglePolyline)))
+        XCTAssertNoThrow(expression: validate(mkPolyline: try MKPolyline(encodedGooglePolyline: testEncodedGooglePolyline)))
     }
     
     func testConstructionFromLocationSequence() {
-        XCTAssertNoThrow(validate(try MKPolyline(sequence: testEncodedGooglePolyline.makeCoordinateSequenceFromGooglePolyline())))
+        XCTAssertNoThrow(expression: validate(mkPolyline: try MKPolyline(sequence: testEncodedGooglePolyline.makeCoordinateSequenceFromGooglePolyline())))
     }
     
     func testEncoding() {
-        XCTAssertNoThrowEqual(testEncodedGooglePolyline, try MKPolyline(encodedGooglePolyline: testEncodedGooglePolyline).googlePolyline)
+        XCTAssertNoThrowEqual(expression1: testEncodedGooglePolyline, try MKPolyline(encodedGooglePolyline: testEncodedGooglePolyline).googlePolyline)
     }
     
     func testConstructionFromPolylinePerformance() {
-        self.measureBlock {
+        self.measure {
             (0..<10000).forEach { _ in
                 let _ = try! MKPolyline(encodedGooglePolyline: testEncodedGooglePolyline)
             }
@@ -62,7 +62,7 @@ class SwiftGooglePolylineMKPolylineExtensionTests: XCTestCase {
     }
 
     func testConstructionFromSequencePerformance() {
-        self.measureBlock {
+        self.measure {
             (0..<10000).forEach { _ in
                 let _ = try! MKPolyline(sequence: testEncodedGooglePolyline.makeCoordinateSequenceFromGooglePolyline())
             }
@@ -71,7 +71,7 @@ class SwiftGooglePolylineMKPolylineExtensionTests: XCTestCase {
     
     func testEncodingPerformance() {
         let polyline = try! MKPolyline(encodedGooglePolyline: testEncodedGooglePolyline)
-        self.measureBlock {
+        self.measure {
             (0..<10000).forEach { _ in
                 let _ = polyline.googlePolyline
             }

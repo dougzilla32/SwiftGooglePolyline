@@ -47,13 +47,13 @@ extension XCTestCase {
         
         while(count > 0) {
             
-            let point = ptr.memory
-            let testPoint = MKMapPointForCoordinate(testDecodedCoordinates[resultIndex])
+            let point = ptr.pointee
+            let testPoint = MKMapPoint.init(testDecodedCoordinates[resultIndex])
             
-            XCTAssertEqualWithAccuracy(point.x, testPoint.x, accuracy:0.0001)
-            XCTAssertEqualWithAccuracy(point.y, testPoint.y, accuracy:0.0001)
+            XCTAssertEqual(point.x, testPoint.x, accuracy:0.0001)
+            XCTAssertEqual(point.y, testPoint.y, accuracy:0.0001)
             ptr = ptr.successor()
-            resultIndex = resultIndex.successor()
+            resultIndex = testDecodedCoordinates.index(after: resultIndex)
             count = count - 1
         }
     }

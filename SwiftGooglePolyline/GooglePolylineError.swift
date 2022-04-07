@@ -26,8 +26,8 @@
 
 import Foundation
 
-public enum GooglePolylineError: ErrorType {
-    case InvalidPolylineString(string:String, errorPosition:String.Index)
+public enum GooglePolylineError: Error {
+    case InvalidPolylineString(string: String, errorPosition: String.Index)
 }
 
 extension GooglePolylineError : CustomStringConvertible {
@@ -36,8 +36,8 @@ extension GooglePolylineError : CustomStringConvertible {
         get {
             switch self {
             case .InvalidPolylineString(let string, let errorPosition):
-                let offset = string.startIndex.distanceTo(errorPosition)
-                let char = string.characters[string.characters.startIndex.advancedBy(offset)]
+                let offset = string.distance(from: string.startIndex, to: errorPosition)
+                let char = string[string.index(string.startIndex, offsetBy: offset)]
                 return "Invalid Google Polyline \"\(string)\". '\(char)' at position \(offset)"
             }
         }

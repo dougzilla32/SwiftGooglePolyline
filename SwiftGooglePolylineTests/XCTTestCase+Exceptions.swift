@@ -28,23 +28,23 @@ import XCTest
 
 extension XCTestCase {
     
-    func XCTAssertThrows<T>(@autoclosure expression: () throws -> T, _ message: String = "", file: String = __FILE__, line: UInt = __LINE__) {
+    func XCTAssertThrows<T>(expression: @autoclosure () throws -> T, _ message: String = "", file: StaticString = #file, line: UInt = #line) {
         do {
-            try expression()
+            _ = try expression()
             XCTFail("No error to catch! - \(message)", file: file, line: line)
         } catch {
         }
     }
     
-    func XCTAssertNoThrow<T>(@autoclosure expression: () throws -> T, _ message: String = "", file: String = __FILE__, line: UInt = __LINE__) {
+    func XCTAssertNoThrow<T>(expression: @autoclosure () throws -> T, _ message: String = "", file: StaticString = #file, line: UInt = #line) {
         do {
-            try expression()
+            _ = try expression()
         } catch let error {
             XCTFail("Caught error: \(error) - \(message)", file: file, line: line)
         }
     }
     
-    func XCTAssertNoThrowEqual<T : Equatable>(@autoclosure expression1: () -> T, @autoclosure _ expression2: () throws -> T, _ message: String = "", file: String = __FILE__, line: UInt = __LINE__) {
+    func XCTAssertNoThrowEqual<T : Equatable>(expression1: @autoclosure () -> T, _ expression2: @autoclosure () throws -> T, _ message: String = "", file: StaticString = #file, line: UInt = #line) {
         do {
             let result2 = try expression2()
             XCTAssertEqual(expression1(), result2, message, file: file, line: line)
@@ -53,7 +53,7 @@ extension XCTestCase {
         }
     }
     
-    func XCTAssertNoThrowValidateValue<T>(@autoclosure expression: () throws -> T, _ message: String = "", file: String = __FILE__, line: UInt = __LINE__, _ validator: (T) -> Bool) {
+    func XCTAssertNoThrowValidateValue<T>(expression: @autoclosure () throws -> T, _ message: String = "", file: StaticString = #file, line: UInt = #line, _ validator: (T) -> Bool) {
         do {
             let result = try expression()
             XCTAssert(validator(result), "Value validation failed - \(message)", file: file, line: line)

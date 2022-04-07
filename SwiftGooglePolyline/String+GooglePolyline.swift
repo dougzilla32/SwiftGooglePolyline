@@ -34,7 +34,7 @@ extension String {
             
             private var previousValue:Int = 0
             
-            mutating func encode(coordinate:CLLocationDegrees) -> String {
+            mutating func encode(coordinate: CLLocationDegrees) -> String {
                 
                 let intCoord = Int(round(coordinate * 1E5))
                 let delta = intCoord - self.previousValue
@@ -64,18 +64,18 @@ extension String {
         private var latitudeEncoder = PointEncoder()
         private var longitudeEncoder = PointEncoder()
         
-        mutating func encode(coordinate:CLLocationCoordinate2D) -> String {
-            return latitudeEncoder.encode(coordinate.latitude) + longitudeEncoder.encode(coordinate.longitude)
+        mutating func encode(coordinate: CLLocationCoordinate2D) -> String {
+            return latitudeEncoder.encode(coordinate: coordinate.latitude) + longitudeEncoder.encode(coordinate: coordinate.longitude)
         }
     }
     
-    private struct PolylineGenerator : GeneratorType {
+    private struct PolylineIterator : IteratorProtocol {
         
         typealias Element = CLLocationCoordinate2D
         
         struct Coordinate {
             private var value:Double = 0.0
-            mutating func nextValue(polyline:String.UnicodeScalarView, inout index:String.UnicodeScalarView.Index) -> Double? {
+            mutating func nextValue(polyline: String.UnicodeScalarView, index: inout String.UnicodeScalarView.Index) -> Double? {
                 
                 if index >= polyline.endIndex {
                     return nil
@@ -92,7 +92,7 @@ extension String {
                     }
                     res |= (byte & 0x1F) << shift;
                     shift += 5;
-                    index = index.successor()
+                    index = polyline.index(after: index)
                 } while (byte >= 0x20 && index < polyline.endIndex);
                 
                 self.value = self.value + Double(((res % 2) == 1) ? ~(res >> 1) : res >> 1);
@@ -101,44 +101,41 @@ extension String {
             }
         }
         
-        private var polylineUnicodeChars:String.UnicodeScalarView
-        private var current:String.UnicodeScalarView.Index
-        private var latitude:Coordinate = Coordinate()
-        private var longitude:Coordinate = Coordinate()
+        private var polylineUnicodeChars: String.UnicodeScalarView
+        private var current: String.UnicodeScalarView.Index
+        private var latitude: Coordinate = Coordinate()
+        private var longitude: Coordinate = Coordinate()
         
-        init(_ polyline:String) {
+        init(_ polyline: String) {
             self.polylineUnicodeChars = polyline.unicodeScalars
             self.current = self.polylineUnicodeChars.startIndex
         }
         
         mutating func next() -> Element? {
-            guard let lat = latitude.nextValue(self.polylineUnicodeChars, index: &self.current), let lng = longitude.nextValue(self.polylineUnicodeChars, index: &self.current) else {
+            guard let lat = latitude.nextValue(polyline: self.polylineUnicodeChars, index: &self.current), let lng = longitude.nextValue(polyline: self.polylineUnicodeChars, index: &self.current) else {
                 return nil
             }
             return Element(latitude: lat, longitude: lng)
         }
     }
     
-    private struct PolylineSequence : SequenceType {
+    private struct PolylineSequence: Sequence {
+        private let encodedPolyline: String
         
-        typealias Generator = PolylineGenerator
-        
-        private let encodedPolyline:String
-        
-        init(_ encodedPolyline:String) throws {
+        init(_ encodedPolyline: String) throws {
             var index = encodedPolyline.startIndex
             try encodedPolyline.unicodeScalars.forEach {
                 if !(0..<64 ~= $0.value - 63) {
                     throw GooglePolylineError.InvalidPolylineString(string: encodedPolyline, errorPosition: index)
                 }
-                index = index.successor()
+                index = encodedPolyline.index(after: index)
             }
             
             self.encodedPolyline = encodedPolyline
         }
         
-        func generate() -> PolylineGenerator {
-            return PolylineGenerator(self.encodedPolyline)
+        func makeIterator() -> PolylineIterator {
+            return PolylineIterator(self.encodedPolyline)
         }
     }
     
@@ -150,10 +147,10 @@ extension String {
      
      - returns: Initialized encoded string
      */
-    public init<S:SequenceType where S.Generator.Element == CLLocationCoordinate2D>(googlePolylineLocationCoordinateSequence sequence:S) {
+    public init<S: Sequence>(googlePolylineLocationCoordinateSequence sequence: S) where S.Iterator.Element == CLLocationCoordinate2D {
         var encoder = CoordinateEncoder()
         self.init(sequence.reduce("") {
-            $0 + encoder.encode($1)
+            $0 + encoder.encode(coordinate: $1)
         })
     }
     
@@ -165,8 +162,8 @@ extension String {
      
      - returns: Initialized encoded string
      */
-    public init<S:SequenceType where S.Generator.Element == MKMapPoint>(googlePolylineMapPointSequence sequence:S) {
-        self.init(googlePolylineLocationCoordinateSequence:sequence.map { MKCoordinateForMapPoint($0) })
+    public init<S:Sequence>(googlePolylineMapPointSequence sequence: S) where S.Iterator.Element == MKMapPoint {
+        self.init(googlePolylineLocationCoordinateSequence: sequence.map { $0.coordinate })
     }
 
     /**
@@ -177,7 +174,7 @@ extension String {
      
      - returns: Initialized encoded string
      */
-    public init(googlePolylineMKMultiPoint polyline:MKMultiPoint) {
+    public init(googlePolylineMKMultiPoint polyline: MKMultiPoint) {
         
         var encoder = CoordinateEncoder()
 
@@ -185,9 +182,10 @@ extension String {
         var ptr = polyline.points()
         
         var s = ""
-        while(count-- > 0) {
-            let coord = MKCoordinateForMapPoint(ptr.memory)
-            s = s + encoder.encode(coord)
+        while(count > 0) {
+            count -= 1
+            let coord = ptr.pointee.coordinate
+            s = s + encoder.encode(coordinate: coord)
             ptr = ptr.successor()
         }
         
